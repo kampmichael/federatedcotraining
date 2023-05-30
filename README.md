@@ -17,7 +17,7 @@ Implementation of A Distributed Co-Training Approach AIMHI
 ## [How to Run an Experiment](#howtorun)
 To run an experiment, you have to setup [RunExp.sh](https://github.com/kampmichael/distributedcotraining/blob/main/RunExp.sh) file with your desired parameters and then use `bash RunExp.sh` to start the experiment.
 ## [Appendix](#appendix)    
-### [A: A Proof of Proposition 1](#A-Proof-of-Proposition-1)
+### [A Proof of Proposition 1](#A-Proof-of-Proposition-1)
 For convenience, we restate the proposition.
 
 **Proposition 1:** For $m\in\mathbb{N}$ clients with local datasets $D^1,\dots,D^m$ and unlabeled dataset $U$ drawn iid. from $\mathbb{D}$, let $\mathbb{A}$ be a learning algorithm that achieves a linearly increasing training accuracy $a_t$ for all labelings of $U$, i.e., there exists $c\in\mathbb{R_{+}}$ such that $a_t=1-c/t$, then there exists $t_0\in\mathbb{N}$ such that $a_t\geq 1/2$ and AIMHI with majority vote converges with probability $1-\delta$, where
