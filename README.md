@@ -8,7 +8,7 @@ Implementation of A Distributed Co-Training Approach AIMHI
     - [A: A Proof of Proposition 1](#proofofproposition)
     - [B: Details on Experiments](#detailsonexperiments)
       - [B.1: Details on Privacy Vulnerability Experiments](#DetailsonPrivacyVulnerabilityExperiments)
-      - [B.2: Datasets](#Datasets)
+      - [Datasets](#Datasets)
       - [B.3: Experimental Setup](#ExperimentalSetup)
     
     
@@ -74,6 +74,7 @@ We assume the following attack model: clients are honest and the server may be s
 The attack scenario for AIMHI and DD is that the attacker can send a (forged) unlabeled dataset to the clients and observe their predictions, equivalent to one attack epoch ($K=1$); the one for FEDAVG and DP-FEDAVG is that the attacker receives model parameters and can run an arbitrary number of attacks---we use $K=500$ attack epochs.
 
 
+#### [Datasets](#Datasets)
 
 
 
