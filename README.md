@@ -9,7 +9,7 @@ Implementation of A Distributed Co-Training Approach AIMHI
     - [B: Details on Experiments](#detailsonexperiments)
       - [B.1: Details on Privacy Vulnerability Experiments](#DetailsonPrivacyVulnerabilityExperiments)
       - [B.2:Datasets](#Datasets)
-      - [Experimental Setup](#ExperimentalSetup)
+      - [Experimental Setup](#Experimental-Setup)
     
     
     
@@ -76,7 +76,7 @@ The attack scenario for AIMHI and DD is that the attacker can send a (forged) un
 
 #### [B.2:Datasets](#Datasets)
 
-#### [Experimental Setup](#ExperimentalSetup)
+#### [Experimental Setup](#Experimental-Setup)
 
 
 
