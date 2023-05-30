@@ -3,18 +3,18 @@ Implementation of A Distributed Co-Training Approach AIMHI
 
 ## Table of Contents
 
-1. [How to Run an Experiment](#howtorun)
+1. [How to Run an Experiment](#How-to-Run-an-Experiment)
 2. [Appendix](#appendix)
     - [A Proof of Proposition 1](#A-Proof-of-Proposition-1)
-    - [B: Details on Experiments](#detailsonexperiments)
-      - [B.1: Details on Privacy Vulnerability Experiments](#DetailsonPrivacyVulnerabilityExperiments)
-      - [B.2:Datasets](#Datasets)
+    - [Details on Experiments](#details-on-experiments)
+      - [Details on Privacy Vulnerability Experiments](#Details-on-Privacy-Vulnerability-Experiments)
+      - [Datasets](#Datasets)
       - [Experimental Setup](#Experimental-Setup)
     
     
     
     
-## [How to Run an Experiment](#howtorun)
+## [How to Run an Experiment](#How-to-Run-an-Experiment)
 To run an experiment, you have to setup [RunExp.sh](https://github.com/kampmichael/distributedcotraining/blob/main/RunExp.sh) file with your desired parameters and then use `bash RunExp.sh` to start the experiment.
 ## [Appendix](#appendix)    
 ### [A Proof of Proposition 1](#A-Proof-of-Proposition-1)
@@ -65,8 +65,8 @@ where $\zeta(x)$ is the Riemann zeta function and $H_n^{(x)}$ is the generalized
 $$\sum_{t=t_0}^\infty\delta_t \leq |U|(4c)^{\frac{m}2}\zeta\left(\frac{m}{2}\right)-\zeta\left(\frac{m}{2}\right)+\zeta\left(\frac{m}{2},t_0+1\right)=|U|(4c)^{\frac{m}2}\zeta\left(\frac{m}{2},t_0+1\right)\enspace .$$
 
 
-### [B: Details on Experiments](#detailsonexperiments)
-#### [B.1: Details on Privacy Vulnerability Experiments](#DetailsonPrivacyVulnerabilityExperiments)
+### [Details on Experiments](#details-on-experiments)
+#### [Details on Privacy Vulnerability Experiments](#Details-on-Privacy-Vulnerability-Experiments)
 We measure privacy vulnerability by performing membership inference attacks against AIMHI and FEDAVG.In both attacks, the attacker creates an attack model using a model it constructs from its training and test datasets. Similar to previous work~[20], we assume that the training data of the attacker has a similar distribution to the training data of the client. Once the attacker has its attack model, it uses this model for membership inference. In blackbox attacks (in which the attacker does not have access to intermediate model parameters), it only uses the classification scores it receives from the target model (i.e., client's model) for membership inference. On the other hand, in whitebox attacks (in which the attacker can observe the intermediate model parameters), it can use additional information in its attack model. Since the proposed AIMHI does not reveal intermediate model parameters to any party, it is only subject to blackbox attacks. Vanilla federated learning on the other hand is subject to whitebox attacks. Each inference attack produces a membership score of a queried data point, indicating the likelihood of the data point being a member of the training set. We measure the success of membership inference as ROC AUC of these scores. The $\textbf{vulnerability (VUL)}$ of a method is the ROC AUC of membership attacks over $K$ runs over the entire training set (also called attack epochs) according to the attack model and scenario. A vulnerability of $1.0$ means that membership can be inferred with certainty, whereas $0.5$ means that deciding on membership is a random guess.
 
 We assume the following attack model: clients are honest and the server may be semi-honest (follow the protocol execution correctly, but it may try to infer sensitive information about the clients). The main goal of a semi-honest server is to infer sensitive information about the local training data of the clients. This is a stronger attacker assumption compared to a semi-honest client since the server receives the most amount of information from the clients during the protocol, and a potential semi-honest client can only obtain indirect information about the other clients. We also assume that parties do not collude.
