@@ -77,23 +77,23 @@ The attack scenario for AIMHI and DD is that the attacker can send a (forged) un
 #### [B.2:Datasets](#Datasets)
 We use $3$ standard image classification datasets: CIFAR10[[2]](https://www.cs.toronto.edu/~kriz/cifar.html), FashionMNIST[[3]](https://arxiv.org/abs/1708.07747), and SVHN[[4]](https://research.google/pubs/pub37648/). We describe the datasets and our preprocessing briefly.
 
-\textit{CIFAR10} consists of $50\,000$ training and $10\,000$ test $32\times 32$ color images in $10$ classes with equal distribution (i.e., a total of $6\,000$ images per class). Images are normalized to zero mean and unit variance.
-%
-\textit{FashionMNIST} consists of $60\,000$ training and $10\,000$ test $28\times 28$ grayscale images of clothing items in $10$ classes with equal distribution. Images are not normalized.
-%
-\textit{SVHN} (Street View House Numbers) consists of $630\,420$ $32\times 32$ color images of digits from house numbers in Google Street View, i.e., $10$ classes. The datasest is partitioned into $73\,257$ for training, $26\,032$ for testing, and $531\,131$ additional training images. In our experiments, we use only the training and testing set. Images are not normalized.
+CIFAR10 consists of $50\,000$ training and $10\,000$ test $32\times 32$ color images in $10$ classes with equal distribution (i.e., a total of $6\,000$ images per class). Images are normalized to zero mean and unit variance.
 
-We use two standard datasets from the UCI Machine Learning repository for our experiments on collaboratively training interpretable models: WineQuality~\citep{cortez2009modeling} and BreastCancer~\citep{sudlow2015uk}. A short description of both datasets follows. 
-%
-\textit{WineQuality} is a tabular dataset of $6\,497$ instances of wine with $11$ features describing the wine (e.g., alcohol content, acidity, pH, and sulfur dioxide levels) and the label is a wine quality score from $0$ to $10$. We remove duplicate rows and transform the categorial type attribute to a numerical value. We then normalize all features to zero mean and unit variance.
-%
-\textit{BreastCancer} is a medical diagnostics tabular dataset with $569$ instances of breast cell samples with $30$ features describing cell nuclei with $2$ classes (malignant and benign). We followed the same preprocessing steps as WineQuality dataset.
+FashionMNIST consists of $60\,000$ training and $10\,000$ test $28\times 28$ grayscale images of clothing items in $10$ classes with equal distribution. Images are not normalized.
 
-Furthermore, we use $2$ medical image classification datasets, Pneumonia~\citep{kermany2018identifying}, and MRI\footnote{\url{https://www.kaggle.com/datasets/navoneel/brain-mri-images-for-brain-tumor-detection}}. 
-%
-\textit{Pneumonia} consists of $5\,286$ training and $624$ test chest x-rays with labels \textit{normal}, \textit{viral pneumonia}, and \textit{bacterial pneumonia}. We simplify the labels to \textit{healthy} and \textit{pneumonia} with a class imbalance of roughly $3$ pneumonia to $1$ healthy. The original images in the Pneumonia dataset do not have a fixed resolution as they are sourced from various clinical settings and different acquisition devices. We resize all images to a resolution of $224\times 224$ pixels without normalization.
-%
-\textit{MRI} consists of $253$ MRI brain scans with a class imbalance of approximately $1.5$ brain tumor scans to $1$ healthy scan. Out of the total $253$ images, we use $53$ images as testing set. Similar to the pneumonia dataset, the original images have no fixed resolution and are thus resized to $150\times 150$ without normalization.
+SVHN (Street View House Numbers) consists of $630\,420$ $32\times 32$ color images of digits from house numbers in Google Street View, i.e., $10$ classes. The datasest is partitioned into $73\,257$ for training, $26\,032$ for testing, and $531\,131$ additional training images. In our experiments, we use only the training and testing set. Images are not normalized.
+
+We use two standard datasets from the UCI Machine Learning repository for our experiments on collaboratively training interpretable models: WineQuality and BreastCancer. A short description of both datasets follows. 
+
+WineQuality is a tabular dataset of $6\,497$ instances of wine with $11$ features describing the wine (e.g., alcohol content, acidity, pH, and sulfur dioxide levels), and the label is a wine quality score from $0$ to $10$. We remove duplicate rows and transform the categorial type attribute to a numerical value. We then normalize all features to zero mean and unit variance.
+
+BreastCancer is a medical diagnostics tabular dataset with $569$ instances of breast cell samples with $30$ features describing cell nuclei with $2$ classes (malignant and benign). We followed the same preprocessing steps as WineQuality dataset.
+
+Furthermore, we use $2$ medical image classification datasets, Pneumonia, and MRI. 
+
+Pneumonia consists of $5\,286$ training and $624$ test chest x-rays with labels normal, viral pneumonia, and bacterial pneumonia. We simplify the labels to healthy and pneumonia with a class imbalance of roughly $3$ pneumonia to $1$ healthy. The original images in the Pneumonia dataset do not have a fixed resolution as they are sourced from various clinical settings and different acquisition devices. We resize all images to a resolution of $224\times 224$ pixels without normalization.
+
+MRI consists of $253$ MRI brain scans with a class imbalance of approximately $1.5$ brain tumor scans to $1$ healthy scans. Out of the total $253$ images, we use $53$ images as a testing set. Similar to the pneumonia dataset, the original images have no fixed resolution and are thus resized to $150\times 150$ without normalization.
 
 #### [Experimental Setup](#Experimental-Setup)
 
