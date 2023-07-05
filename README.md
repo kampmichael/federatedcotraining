@@ -80,17 +80,16 @@ We use $3$ standard image classification datasets: CIFAR10[[2]](https://www.cs.t
 CIFAR10 consists of $50\,000$ training and $10\,000$ test $32\times 32$ color images in $10$ classes with equal distribution (i.e., a total of $6\,000$ images per class). Images are normalized to zero mean and unit variance.
 
 
-| Dataset      | Training Size | Testing Size | Unlabeled Size $|U|$ | Communication Period $b$ | Number of Rounds $T$ |
-|--------------|---------------|--------------|---------------------|-------------------------|-----------------------|
-| CIFAR10      | 40,000        | 10,000       | 10,000              | 10                      | 3,000                 |
-| FashionMNIST | 10,000        | 10,000       | 50,000              | 50                      | 20,000                |
-| Pneumonia    | 4,386         | 624          | 900                 | 20                      | 20,000                |
-| MRI          | 30            | 53           | 170                 | 6                       | 2,000                 |
-| SVHN         | 38,257        | 26,032       | 35,000              | 10                      | 20,000                |
 
-
-
-
+| Dataset     | Training Size | Testing Size | Unlabeled Size U    | Communication Period b | Number of Rounds T  |
+|-------------|---------------|--------------|---------------------|-------------------------|-----------------------|
+| CIFAR10     | 40,000        | 10,000       | 10,000              | 10                      | 3,000                 |
+| FashionMNIST| 10,000        | 10,000       | 50,000              | 50                      | 20,000                |
+| Pneumonia   | 4,386         | 624          | 900                 | 20                      | 20,000                |
+| MRI         | 30            | 53           | 170                 | 6                       | 2,000                 |
+| SVHN        | 38,257        | 26,032       | 35,000              | 10                      | 20,000                |
+            
+                              Table 3: Experimental setup for Sections 5.3, 5.4, and 5.3
 
 FashionMNIST consists of $60\,000$ training and $10\,000$ test $28\times 28$ grayscale images of clothing items in $10$ classes with equal distribution. Images are not normalized.
 
@@ -110,6 +109,80 @@ MRI consists of $253$ MRI brain scans with a class imbalance of approximately $1
 
 #### [Experimental Setup](#Experimental-Setup)
 
+| Layer               | Output Shape | Activation | Parameters |
+|---------------------|--------------|------------|------------|
+| Conv2D              | (32, 32, 32) | ReLU       | 896        |
+| BatchNormalization | (32, 32, 32) | -          | 128        |
+| Conv2D              | (32, 32, 32) | ReLU       | 9248       |
+| BatchNormalization | (32, 32, 32) | -          | 128        |
+| MaxPooling2D        | (16, 16, 32) | -          | -          |
+| Dropout             | (16, 16, 32) | -          | -          |
+| Conv2D              | (16, 16, 64) | ReLU       | 18496      |
+| BatchNormalization | (16, 16, 64) | -          | 256        |
+| Conv2D              | (16, 16, 64) | ReLU       | 36928      |
+| BatchNormalization | (16, 16, 64) | -          | 256        |
+| MaxPooling2D        | (8, 8, 64)   | -          | -          |
+| Dropout             | (8, 8, 64)   | -          | -          |
+| Conv2D              | (8, 8, 128)  | ReLU       | 73856      |
+| BatchNormalization | (8, 8, 128)  | -          | 512        |
+| Conv2D              | (8, 8, 128)  | ReLU       | 147584     |
+| BatchNormalization | (8, 8, 128)  | -          | 512        |
+| MaxPooling2D        | (4, 4, 128)  | -          | -          |
+| Dropout             | (4, 4, 128)  | -          | -          |
+| Flatten             | (2048,)      | -          | -          |
+| Dense               | (128,)       | ReLU       | 262272     |
+| BatchNormalization | (128,)       | -          | 512        |
+| Dropout             | (128,)       | -          | -          |
+| Dense               | (10,)        | Linear     | 1290       |
+               Table 4: CIFAR10 architecture
 
+We now describe the details of the experimental setup used in our empirical evaluation. 
+
+In Section~\ref{sec:exp:iid}, we use $m=5$ clients for all datasets. We report the split into training, test, and unlabeled dataset per dataset, as well as the used communication period $b$ and number of rounds $T$ in Table~\ref{tbl:expsetup}.
+
+
+
+
+For all experiments, we use Adam as an optimization algorithm with a learning rate $0.01$ for CIFAR10, and $0.001$ for the remaining datasets. A description of the DNN architecture for each dataset follows.
+%
+In section \ref{sec:exp:noniid} we use the same setup for section \ref{sec:exp:iid} but we sample the local dataset from a Dirichlet distribution as described in \ref{sec:exp:noniid}.
+%
+In section \ref{scalability}, We use the same setup for section \ref{sec:exp:iid} but we use $m\in\{5,10,20,40,80\}$ clients as described in \ref{scalability}.
+
+The neural network architectures used for each dataset are given in the following. 
+%
+For CIFAR10 we use a CNN with multiple convolutional layers with batch normalization and max pooling. The details of the architecture are described in Table~\ref{tbl:CIFAR10arch}.
+%
+For FashionMNIST, we use a simple feed forward architecture on the flattened input. The details of the architecture are described in Table~\ref{tbl:FashionMNISTarch}.
+
+| Layer  | Output Shape  | Activation | Parameters |
+|--------|---------------|------------|------------|
+| Flatten| (784,)        | -          | -          |
+| Linear | (784, 512)   | -          | 401,920    |
+| ReLU   | (512,)        | ReLU       | -          |
+| Linear | (512, 512)   | -          | 262,656    |
+| ReLU   | (512,)        | ReLU       | -          |
+| Linear | (512, 10)    | -          | 5,130      |
+
+           Table 5: FashionMNIST architecture
+
+For Pneumonia, we use a simple CNN, again with batch normalization and max pooling, with details given in Table~\ref{tbl:Pneumoniaarch}.For MRI we use an architecture similar to pneumonia with details described in Table~\ref{tbl:MRIarch}.
+
+| Layer        | Output Shape  | Activation | Parameters |
+|--------------|---------------|------------|------------|
+| Conv2d       | (3, 32, 32)   | -          | 896        |
+| BatchNorm2d  | (32, 32, 32)  | -          | 64         |
+| Conv2d       | (32, 32, 32)  | -          | 18,464     |
+| BatchNorm2d  | (64, 32, 32)  | -          | 128        |
+| MaxPool2d    | (64, 16, 16)  | -          | -          |
+| Conv2d       | (64, 16, 16)  | -          | 36,928     |
+| BatchNorm2d  | (64, 16, 16)  | -          | 128        |
+| MaxPool2d    | (64, 8, 8)    | -          | -          |
+| Flatten      | (4096,)       | -          | -          |
+| Linear       | (2,)          | -          | 4,194,306  |
+
+           Table 6: Pneumonia architecture
+
+For SVHN, we use again a standard CNN with batch normalization and max pooling, detailed in Table~\ref{tbl:SVHNarch}.
 
 
