@@ -79,6 +79,19 @@ We use $3$ standard image classification datasets: CIFAR10[[2]](https://www.cs.t
 
 CIFAR10 consists of $50\,000$ training and $10\,000$ test $32\times 32$ color images in $10$ classes with equal distribution (i.e., a total of $6\,000$ images per class). Images are normalized to zero mean and unit variance.
 
+
+| Dataset      | Training Size | Testing Size | Unlabeled Size $|U|$ | Communication Period $b$ | Number of Rounds $T$ |
+|--------------|---------------|--------------|---------------------|-------------------------|-----------------------|
+| CIFAR10      | 40,000        | 10,000       | 10,000              | 10                      | 3,000                 |
+| FashionMNIST | 10,000        | 10,000       | 50,000              | 50                      | 20,000                |
+| Pneumonia    | 4,386         | 624          | 900                 | 20                      | 20,000                |
+| MRI          | 30            | 53           | 170                 | 6                       | 2,000                 |
+| SVHN         | 38,257        | 26,032       | 35,000              | 10                      | 20,000                |
+
+
+
+
+
 FashionMNIST consists of $60\,000$ training and $10\,000$ test $28\times 28$ grayscale images of clothing items in $10$ classes with equal distribution. Images are not normalized.
 
 SVHN (Street View House Numbers) consists of $630\,420$ $32\times 32$ color images of digits from house numbers in Google Street View, i.e., $10$ classes. The datasest is partitioned into $73\,257$ for training, $26\,032$ for testing, and $531\,131$ additional training images. In our experiments, we use only the training and testing set. Images are not normalized.
