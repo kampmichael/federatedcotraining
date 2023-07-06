@@ -1,7 +1,7 @@
 # Protecting Sensitive Data through Federated Co-Training
 Implementation of A Distributed Co-Training Approach AIMHI. The Appendix of the paper includes the proof of Proposition 1 and all experiments details can be found as a Pdf on [AIMHI_Appendix](https://github.com/kampmichael/distributedcotraining/blob/main/AIMHI_Appendix.pdf)
 
-## Table of Contents
+<!--## Table of Contents
 
 1. [How to Run an Experiment](#How-to-Run-an-Experiment)
 2. [Appendix](#appendix) 
@@ -11,11 +11,12 @@ Implementation of A Distributed Co-Training Approach AIMHI. The Appendix of the 
       - [Datasets](#Datasets)
       - [Experimental Setup](#Experimental-Setup)
     
-    
+ -->   
     
     
 ## [How to Run an Experiment](#How-to-Run-an-Experiment)
 To run an experiment, you have to setup [RunExp.sh](https://github.com/kampmichael/distributedcotraining/blob/main/RunExp.sh) file with your desired parameters and then use `bash RunExp.sh` to start the experiment.
+<!--
 ## [Appendix](#appendix)    
 ### [A Proof of Proposition 1](#A-Proof-of-Proposition-1)
 For convenience, we restate the proposition.
