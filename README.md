@@ -1,10 +1,10 @@
 # Protecting Sensitive Data through Federated Co-Training
-Implementation of A Distributed Co-Training Approach AIMHI
+Implementation of A Distributed Co-Training Approach AIMHI. The Appendix of the paper includes the proof of Proposition 1 and all experiments details can be found as a Pdf on [AIMHI_Appendix](https://github.com/kampmichael/distributedcotraining/blob/main/AIMHI_Appendix.pdf)
 
 ## Table of Contents
 
 1. [How to Run an Experiment](#How-to-Run-an-Experiment)
-2. [Appendix](#appendix)
+2. [Appendix](#appendix) 
     - [A Proof of Proposition 1](#A-Proof-of-Proposition-1)
     - [Details on Experiments](#details-on-experiments)
       - [Details on Privacy Vulnerability Experiments](#Details-on-Privacy-Vulnerability-Experiments)
