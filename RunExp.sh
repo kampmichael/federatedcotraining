@@ -2,7 +2,7 @@
 
 
 # Select a method
-method="AIMHI"
+method="FedCT"
 # set number of clients m
 numclients=5
 # number of rounds T
