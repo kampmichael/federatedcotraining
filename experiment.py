@@ -209,46 +209,6 @@ if args.method == "centralized": #standard centralized learning
         if (t + 1) % args.evaluation_rounds == 0:
             log_errors([client], dataset, error_measure, error_log, t)
 
-elif args.method == "Per-FedCT": #label sharing
-    clients = []
-    for _ in range(args.num_clients):
-        client = client_class()
-        clients.append(client)
-    predictions = None
-    for t in range(args.num_rounds):
-        if isinstance(predictions, list):
-            predictions = np.array(predictions)
-        yconsensus = getConsensusLabels(predictions, args.consensus) #we could avoid that with the same if statement as in the concatenation below, but I choose less code over efficiency ATM
-        #print("yconsensus is here", yconsensus)
-
-        predictions = []
-        for i,client in enumerate(clients):
-            Xtrain, ytrain = dataset.getNextLocalBatch(i, args.train_batch_size)
-            #if (t+1) % args.comm_period == 0 and yconsensus is not None:
-                #Xtrain, ytrain = np.concatenate((Xtrain, dataset.Xunlabeled)), np.concatenate((ytrain, yconsensus))
-            #print("type isss xunl",type(dataset.Xunlabeled))
-            #print("type isss y_conss",type(yconsensus))
-            if yconsensus is not None:
-                client.per_train(Xtrain, ytrain,dataset.Xunlabeled,yconsensus,args.lmbda)
-                #print(" I am here to test")
-            if yconsensus is None:
-                #client.train(Xtrain,ytrain)
-                client.per_train(Xtrain, ytrain,dataset.Xunlabeled,dataset.yunlabeled,args.lmbda)
-                #print("Not here")
-        if (t+1) % args.comm_period == 0:
-            print("Comm-round ",(t+1))
-            #params = []
-            for client in clients:
-                predictions.append(client.predict(dataset.Xunlabeled))                
-                #params.append(client.getParameters())
-            #agg_params = aggregate(params)
-            predictions = np.array(predictions)
-            #comm_log[t] = {"params":params.copy(),"agg":agg_params,"clients":params}
-            comm_log[t] = {"predictions" : predictions.copy(), "consensus_labels" : getConsensusLabels(predictions, args.consensus)}
-        if args.evaluation_rounds == 1 or (t + 1) % args.evaluation_rounds == 0:
-            log_errors(clients, dataset, error_measure, error_log, t)
-            log_models(clients, t, exp_path)
-
 elif args.method == "FedCT": #label sharing
     clients = []
     for _ in range(args.num_clients):
@@ -343,40 +303,6 @@ elif args.method == "FL": #model aggregation (e.g., averaging)
             log_errors(clients, dataset, error_measure, error_log, t)
             log_models(clients, t, exp_path)
 
-elif args.method == 'DP-FL':
-    clients = []
-    for _ in range(args.num_clients):
-        client = client_class()
-        clients.append(client)
-    for t in range(args.num_rounds):
-        for i, client in enumerate(clients):
-            Xtrain, ytrain = dataset.getNextLocalBatch(i, args.train_batch_size)
-            client.train(Xtrain, ytrain)
-        if (t + 1) % args.comm_period == 0:
-            print("Comm-round ", (t + 1))
-            params = []
-            for client in clients:
-                client_params = client.getParameters().getCopy()
-                print("before: ", np.linalg.norm(client_params.toVector()))
-                normFact = max(1, (np.linalg.norm(client_params.toVector()) / args.dp_s))
-                print("norm fact: ", normFact)
-                client_params.scalarMultiply(1. / normFact)  # clip the update
-                update = client_params.toVector() - client.getParameters().toVector()
-                # add noise to update
-                noise = np.random.normal(loc=0.0, scale=(args.dp_sigma ** 2) * (args.dp_s ** 2), size=update.shape)
-                clipped_update = np.clip(update, -args.dp_s, args.dp_s)
-                noisy_update = clipped_update + noise
-                client_params.fromVector(client.getParameters().toVector() + noisy_update)
-                print("noise: ", np.linalg.norm(noise))
-                print("after: ", np.linalg.norm(client_params.toVector()))
-                params.append(client_params)
-            agg_params = aggregate(params)
-            for client in clients:
-                client.setParameters(agg_params)
-            comm_log[t] = {"params": params.copy(), "agg": agg_params, "clients": params}
-        if args.evaluation_rounds == 1 or (t + 1) % args.evaluation_rounds == 0:
-            log_models(clients, t, exp_path)
-            log_errors(clients, dataset, error_measure, error_log, t)
 
 elif args.method == 'FL-DP': #model aggregation (e.g., averaging)
     clients = []
@@ -409,31 +335,6 @@ elif args.method == 'FL-DP': #model aggregation (e.g., averaging)
         if args.evaluation_rounds == 1 or (t + 1) % args.evaluation_rounds == 0:
             log_errors(clients, dataset, error_measure, error_log, t)
             log_models(clients, t, exp_path) 
-
-elif args.method == "DD-ODL": # Distributed Distillation for On-Device Learning
-    teacher = teacher_class()
-    clients = []
-    for _ in range(args.num_clients):
-        client = client_class()
-        clients.append(client)
-    for t in range(args.rounds):
-        if (t+1) % args.distill_period == 0:
-            teacher.train(dataset.Xtrain, dataset.ytrain)
-        for i, client in enumerate(clients):
-            Xtrain, ytrain = dataset.getNextLocalBatch(i, args.batch_size)
-            if (t+1) % args.distill_period == 0:
-                ytrain = teacher.predict(Xtrain)
-            client.train(Xtrain, ytrain)
-        if (t+1) % args.communication_period == 0:
-            models = []
-            for client in clients:
-                models.append(client.getParameters())
-            agg_params = aggregate(models, args.aggregation_method)
-            for client in clients:
-                client.setParameters(agg_params)
-        if args.evaluation_rounds == 1 or (t+1) % args.evaluation_rounds == 0:
-            log_errors(clients, dataset, error_measure, error_log, t)
-            log_models(clients, t, exp_path)
 
 elif args.method == "DD":
     clients = []
