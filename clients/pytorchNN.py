@@ -41,51 +41,6 @@ class PyTorchNN(Client):
         else:
             self._schedule = None
 
-    def per_train(self, X1, y1,X2,y2,lmbda):
-        import torch
-        import torch.nn as nn
-        if self._core is None:
-            self.error("No core is set")
-            raise AttributeError("No core is set")
-        self.old_params = self.getParameters() #store previous parameters
-        self._updateRule.zero_grad()   # zero the gradient buffers
-        def prepare_tensors(X, y):
-            if isinstance(X, torch.Tensor):
-                X = X.cpu().numpy()
-            if isinstance(y, torch.Tensor):
-                y = y.cpu().numpy()
-            
-            if self._mode == 'gpu':
-                exampleTensor = torch.cuda.FloatTensor(X, device=self._device)
-                labelTensor = torch.tensor(y, device=self._device)      
-            else:
-                exampleTensor = torch.tensor(X)
-                if type(self._loss) is nn.MSELoss or type(self._loss) is nn.L1Loss:
-                    labelTensor = torch.tensor(y)
-                else:
-                    labelTensor = torch.LongTensor(y)
-            return exampleTensor, labelTensor
-        # Prepare tensors for X1, y1 and X2, y2
-        exampleTensor1, labelTensor1 = prepare_tensors(X1, y1)
-        exampleTensor2, labelTensor2 = prepare_tensors(X2, y2)
-        
-        # Forward pass
-        output1 = self._core(exampleTensor1)
-        output2 = self._core(exampleTensor2)
-        
-        # Calculate individual losses
-        loss1 = self._loss(output1, labelTensor1)
-        loss2 = self._loss(output2, labelTensor2)
-        # Combine the losses
-        loss= loss1 + lmbda * loss2
-
-        loss.backward()
-        self._updateRule.step()    
-        if self._schedule is not None:
-            self._schedule.step()
-        return [loss.data.cpu().numpy(),output1.data.cpu().numpy(), output2.data.cpu().numpy()]
-
-
     def train(self, X, y):
         import torch
         import torch.nn as nn
@@ -126,6 +81,64 @@ class PyTorchNN(Client):
         output = self._core(exampleTensor).data.cpu().numpy()
         return np.argmax(output, 1)
 
+    def train_llm(self, X, y):
+        import torch
+        import torch.nn as nn
+        if self._core is None:
+            self.error("No core is set")
+            raise AttributeError("No core is set")
+        self.old_params = self.getParameters() #store previous parameters
+        self._updateRule.zero_grad()   # zero the gradient buffers
+        exampleTensor = X
+        labelTensor = y
+        if isinstance(X, torch.Tensor):
+            X = X.cpu().numpy()
+        if isinstance(y, torch.Tensor):
+            y = y.cpu().numpy()      
+        if self._mode == 'gpu':
+            exampleTensor = torch.cuda.LongTensor(X, device=self._device)
+            labelTensor = torch.tensor(y, device=self._device)      
+        else:
+            exampleTensor = torch.tensor(X)
+            if type(self._loss) is nn.MSELoss or type(self._loss) is nn.L1Loss:
+                labelTensor = torch.tensor(y)
+            else:
+                labelTensor = torch.LongTensor(y)
+        output = self._core(exampleTensor,labels=labelTensor)
+        #loss = self._loss(output, labelTensor)
+        loss = output.loss
+        loss.backward()
+        self._updateRule.step()    
+        if self._schedule is not None:
+            self._schedule.step()
+        #return [loss.data.cpu().numpy(), output.data.cpu().numpy()]
+        return [loss.item(), output.logits.detach().cpu().numpy()]
+        
+    def predict_llm(self, X) -> np.ndarray:
+        import torch
+        if self._mode == 'gpu':
+            
+            if isinstance(X, np.ndarray):
+                exampleTensor = torch.from_numpy(X).clone().detach().to(dtype=torch.float32, device=self._device)
+            elif isinstance(X, torch.Tensor):
+                # Handle the case where x is already a PyTorch tensor
+                exampleTensor = X.clone().detach().to(dtype=torch.float32, device=self._device)
+            else:
+                # Handle other cases or raise an error
+                raise ValueError(f"Unsupported type for x: {type(X)}")
+            #exampleTensor = torch.tensor(X, dtype=torch.float32, device=self._device)
+            #exampleTensor = X.clone().detach().to(dtype=torch.float32, device=self._device)
+            #exampleTensor = torch.from_numpy(X).clone().detach().to(dtype=torch.float32, device=self._device)
+
+
+        else:
+            exampleTensor = torch.FloatTensor(X)
+        exampleTensor = torch.LongTensor(X)
+        exampleTensor = exampleTensor.to(self._device)
+        output = self._core(exampleTensor)
+        output=output.logits.detach().cpu().numpy()
+        return np.argmax(output, 1)
+        
     def setParameters(self, param : PyTorchNNParameters):
         import torch
         if not isinstance(param, PyTorchNNParameters):
@@ -280,4 +293,26 @@ class PaperPytorchSVHN(PyTorchNN):
         torchnetwork = torchnetwork.cuda(device)
         self.setCore(torchnetwork)
         self.setLoss(lossFunction)
+        self.setUpdateRule(optimizer, lr, lr_schedule_ep, lr_change_rate)
+
+@is_client
+class PaperPytorchIMDB(PyTorchNN):  
+    def __init__(self, device_type="cuda"):
+        from transformers import GPT2ForSequenceClassification
+        
+        super(PaperPytorchIMDB, self).__init__()
+        self.name = "PaperPytorchIMDB"
+        device = torch.device(device_type)
+        optimizer = 'AdamW' #should be given via kwargs, or by passing args from experiment
+        lr = 0.0001
+        lr_schedule_ep = None
+        lr_change_rate = 0.0005
+        #lossFunction = "CrossEntropyLoss"
+        torchnetwork = GPT2ForSequenceClassification.from_pretrained("gpt2", num_labels=2)
+        torchnetwork.config.pad_token_id=50256
+        torchnetwork = torchnetwork.cuda(device)
+        num_params = sum(p.numel() for p in torchnetwork.parameters())
+        print(f"Number of parameters: {num_params}")
+        self.setCore(torchnetwork)
+        #self.setLoss(lossFunction)
         self.setUpdateRule(optimizer, lr, lr_schedule_ep, lr_change_rate)
