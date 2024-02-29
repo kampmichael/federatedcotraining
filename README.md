@@ -1,22 +1,16 @@
 # Protecting Sensitive Data through Federated Co-Training
-Implementation of [Federated Co-Training Approach FedCT.](https://arxiv.org/pdf/2310.05696.pdf)
-<!---The Appendix of the paper includes the proof of Proposition 1 and all experiments details can be found as a Pdf on [AIMHI_Appendix](https://github.com/kampmichael/distributedcotraining/blob/main/AIMHI_Appendix.pdf) --->
+Implementation of [Federated Co-Training Approach FedCT.](https://arxiv.org/pdf/2310.05696.pdf) In this paper, we propose to use federated co-training by having clients share predictions on an unlabeled public dataset iteratively. The server then creates a consensus based on these predictions, which clients utilize as pseudo-labels. In summary, our contributions are:
 
-<!--## Table of Contents
+- (1) a novel federated co-training (FedCT) approach to collaboratively train models from privacy-sensitive distributed data sources via hard label sharing on a public unlabeled dataset that achieves model quality comparable to standard federated learning and distributed distillation and can seamlessly integrate any supervised learning method on clients in the federated system, including interpretable models, such as XGboost, decision trees, Random forest, and rule ensembles.
+- (2) Theoretical analysis providing a novel convergence result for hard label sharing and a sensitivity bound for hard label sharing by on-average-leave-one-out-stable machine learning algorithms. This analysis provides Differential Privacy (DP) guarantees for \fedct using the XOR-mechanism.
+- (3) Extensive empirical evaluation demonstrating that \fedct achieves a favorable privacy-utility trade-off compared to model parameter and soft label sharing.
 
-1. [How to Run an Experiment](#How-to-Run-an-Experiment)
-2. [Appendix](#appendix) 
-    - [A Proof of Proposition 1](#A-Proof-of-Proposition-1)
-    - [Details on Experiments](#details-on-experiments)
-      - [Details on Privacy Vulnerability Experiments](#Details-on-Privacy-Vulnerability-Experiments)
-      - [Datasets](#Datasets)
-      - [Experimental Setup](#Experimental-Setup)
-    
- -->   
-    
-    
+
+
 ## [How to Run an Experiment](#How-to-Run-an-Experiment)
 To run an experiment, you have to setup [RunExp.sh](https://github.com/kampmichael/distributedcotraining/blob/main/RunExp.sh) file with your desired parameters and then use `bash RunExp.sh` to start the experiment.
+
+
 <!--
 ## [Appendix](#appendix)    
 ### [A Proof of Proposition 1](#A-Proof-of-Proposition-1)
