@@ -5,7 +5,7 @@ This repository includes the implementation of [Federated Co-Training Approach F
 
 - (1) a novel federated co-training (FedCT) approach to collaboratively train models from privacy-sensitive distributed data sources via hard label sharing on a public unlabeled dataset that achieves model quality comparable to standard federated learning and distributed distillation and can seamlessly integrate any supervised learning method on clients in the federated system, including interpretable models, such as XGboost, decision trees, Random forest, and rule ensembles.
 - (2) Theoretical analysis providing a novel convergence result for hard label sharing and a sensitivity bound for hard label sharing by on-average-leave-one-out-stable machine learning algorithms. This analysis provides Differential Privacy (DP) guarantees for \fedct using the XOR-mechanism.
-- (3) Extensive empirical evaluation demonstrating that \fedct achieves a favorable privacy-utility trade-off compared to model parameter and soft label sharing.
+- (3) Extensive empirical evaluation demonstrating that FedCT achieves a favorable privacy-utility trade-off compared to model parameter and soft label sharing.
 
 
 
