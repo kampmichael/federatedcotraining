@@ -1,4 +1,4 @@
-# Protecting Sensitive Data through Federated Co-Training
+# Little is Enough: Improving Privacy by Sharing Labels in Federated Semi-Supervised Learning
 
 ## [FedCT](#FedCT)
 This repository includes the implementation of [Federated Co-Training Approach FedCT.](https://arxiv.org/pdf/2310.05696.pdf) In this paper, we propose to use federated co-training by having clients share predictions on an unlabeled public dataset iteratively. The server then creates a consensus based on these predictions, which clients utilize as pseudo-labels. In summary, our contributions are:
@@ -11,7 +11,7 @@ This repository includes the implementation of [Federated Co-Training Approach F
 
 ## [How to Run an Experiment](#How-to-Run-an-Experiment)
 To run an experiment, you have to setup [RunExp.sh](https://github.com/kampmichael/distributedcotraining/blob/main/RunExp.sh) file with your desired parameters and then use `bash RunExp.sh` to start the experiment.
-
+<!---
 ## [Citation](#citation)
 If you use our work, please cite the following paper:
 
@@ -21,7 +21,6 @@ If you use our work, please cite the following paper:
   author={Abourayya, Amr and Kleesiek, Jens and Rao, Kanishka and Ayday, Erman and Rao, Bharat and Webb, Geoff and Kamp, Michael},
   journal={arXiv preprint arXiv:2310.05696},
   year={2023}
-}
 
 
 
