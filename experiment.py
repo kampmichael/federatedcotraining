@@ -10,6 +10,7 @@ import argparse
 from clients import Client
 from clients.kerasNN import *
 from clients.pytorchNN import *
+from clients.resnet import *
 from clients.sklearnClients import *
 from datasets import Dataset
 from datasets.CIFAR10keras import *
@@ -27,8 +28,17 @@ from datasets.Heart_Disease_Statlog import *
 from datasets.adultincome import *
 from datasets.mushrooms import *
 from datasets.covtype import *
+from datasets.CIFAR100 import *
+from datasets.Domainnet import *
+from datasets.IMDB import *
+from datasets.Twitter import *
+
 from clients.rulefitClients import *
 from clients.xgboostClients import *
+
+available_clients = getAvailableClasses(Client)
+available_datasets = getAvailableClasses(Dataset)
+
 from clients import *
 from datasets import *
 import aggregators
@@ -38,19 +48,18 @@ from xor import *
 import copy
 import random
 import tensorflow as tf
-import wandb
-from wandb.keras import WandbMetricsLogger, WandbModelCheckpoint
+from torch.utils.data import Dataset, DataLoader
 
-available_clients = getAvailableClasses(Client)
-available_datasets = getAvailableClasses(Dataset)
 torch.cuda.empty_cache()
-
 #set the random seeds
 random.seed(hash("setting random seeds") % 2**32 - 1)
 np.random.seed(hash("improves reproducibility") % 2**32 - 1)
 
 #Weight and Bises login
+import wandb
+#from wandb.keras import WandbMetricsLogger, WandbModelCheckpoint
 wandb.login(key='999ae259390532c6c283ea338b365a2e9b489d78')
+
 
 available_aggregators = []
 for name, obj in inspect.getmembers(aggregators):
@@ -60,7 +69,7 @@ for name, obj in inspect.getmembers(aggregators):
 #set the parameters
 parser = argparse.ArgumentParser(description='AIM-HI Experiment Suite')
 parser.add_argument('--method', type=str, default='centralized',
-                    choices=['centralized', 'FedCT', 'FL','FL-DP','FedCT-DP','DD','FedCT-diffclass','PATE','DP-PATE'],
+                    choices=['centralized', 'AIMHI', 'FL', 'DP-FL','FL-DP','AIMHI-DP','DD','Per-AIMHI','AIMHI-diffclass','PATE','DP-PATE'],
                     help='Federated learing method to be used (default: AIMHI)')
 parser.add_argument('--num-clients', type=int, default=1,
                     help='Number of clients in federated network (default: 1)')
@@ -100,49 +109,66 @@ parser.add_argument('--lmbda', type=float, default=1,
                     help='lmbda is a regularization parameter for personalized distributed co-training')
 parser.add_argument('--distill-period', type=int, default=1,
                     help='distill period of (default: 2)')
-args = parser.parse_args()     
+args = parser.parse_args()    
 
+#if args.method=="AIMHI-diffclass":
+    # Split the comma-separated string to get the list of client names
+    #client_names = args.client.split(",")
+    #client_class = available_clients[client_names]
 cuda = torch.device('cuda:2')
 ### Initialize ###
 client_class = available_clients[args.client]
 num_clients = args.num_clients if args.method != "centralized" else 1
 dataset = available_datasets[args.dataset](args.method, num_clients, args.num_unlabeled, args.num_samples_per_client)
 
+torch.manual_seed(123)
+random.seed(123)
+np.random.seed(123)
 
 if args.dataset == "CIFAR10Keras":
-    name="CIFAR10_FedCT"
+    name="CIFAR10_AIMHI"
+if args.dataset == "CIFAR10pytorch":
+    name="CIFAR10_AIMHI"
 if args.dataset=="MRI":
-    name="MRI_FedCT"
+    name="MRI_AIMHI"
 if args.dataset=="Pneum":
-    name="Pneum_FedCT"
+    name="Pneum_AIMHI"
 if args.dataset=="FashionMNIST":
-    name="FashionMNIST_FedCT"
+    name="FashionMNIST_AIMHI"
 if args.dataset=="SVHN":
-    name="SVHN_FedCT"
+    name="SVHN_AIMHI"
 if args.num_clients>5:
-    name="Scalability_FedCT"
+    name="Scalability_AIMHI"
 if args.dataset=="Noniid_FashionMNIST":
-    name="Noniid_FashionMNIST_FedCT"
+    name="Noniid_FashionMNIST_AIMHI"
 if args.dataset=="breast_cancer":
-    name="breast_cancer_FedCT"
+    name="breast_cancer_AIMHI"
 if args.dataset=="winequalityN":
-    name="winequalityN_FedCT"
+    name="winequalityN_AIMHI"
 if args.dataset=="Heart_disease_statlog":
-    name="Heart_disease_statlog_FedCT"
+    name="Heart_disease_statlog_AIMHI"
 if args.dataset=="adultincome":
     name="adultincome"
 if args.dataset=="mushrooms":
     name="mushrooms"
 if args.dataset=="covtype":
     name="covtype"
-#if args.method=="DP-FL" or "FL-DP":
- #   name="FL-DP"
-if args.method=="FedCT-DP":
-    name="FedCT-DP"
+if args.method=="DP-FL" or "FL-DP":
+    name="FL-DP"
+if args.method=="AIMHI-DP":
+    name="AIMHI-DP"
 if args.method=="DD":
     name="DD"
-if args.method=="Per-FedCT":
-    name="Personalized FedCT"
+if args.method=="Per-AIMHI":
+    name="Personalized AIMHI"
+if args.method=="PATE":
+    name="PATE"
+if args.method=="DP-PATE":
+    name="DP-PATE"
+if args.dataset=="IMDB":
+    name="LLM_IMDB"
+if args.dataset=="Twitter":
+    name="LLM_Twitter"
     
 wandb.init(
 
