@@ -208,32 +208,97 @@ elif args.method == "FedCT": #label sharing
     for t in range(args.num_rounds):
         if isinstance(predictions, list):
             predictions = np.array(predictions)
-        yconsensus = getConsensusLabels(predictions, args.consensus) #we could avoid that with the same if statement as in the concatenation below, but I choose less code over efficiency ATM
-        predictions = []
+        yconsensus = getConsensusLabels(predictions, args.consensus)
+        if yconsensus is not None:
+            Xunlabeled_tensor = torch.tensor(dataset.Xunlabeled)
+            yconsensus_tensor = torch.tensor(yconsensus)
+            unlabeled_dataset = UnlabeledDataset(Xunlabeled_tensor, yconsensus_tensor)
+            # Create a DataLoader
+            batch_size_un = 64  # You can set this to your desired batch size
+            unlabeled_dataloader = DataLoader(unlabeled_dataset, batch_size=batch_size_un, shuffle=True)
+
+        # Turn it on if you need to use Qualified Majority vote
+        ###########
+        #yconsensusQualified = getConsensusLabelsQualified(predictions, args.consensus,agreement_threshold=0.9)
+        #if yconsensusQualified is not None:
+        #if yconsensus is not None:
+            #yconsensusQualified = np.array(yconsensusQualified)
+            # Find indices where yconss has value not equal to -1
+            #valid_indices = np.where(yconsensusQualified != -1)[0]
+            #yconss_filtered = [yconsensusQualified[i] for i in valid_indices]
+            #X_unlabeled_filtered = dataset.Xunlabeled[valid_indices]
+            #y_unlabaled_true_filtered=dataset.yunlabeled[valid_indices]
+            #Xunlabeled_tensor = torch.tensor(X_unlabeled_filtered)
+            #yconsensus_tensor = torch.tensor(yconss_filtered)
+            #unlabeled_dataset = UnlabeledDataset(Xunlabeled_tensor, yconsensus_tensor)
+            # Create a DataLoader
+            #batch_size_un = 64  # You can set this to your desired batch size
+            #unlabeled_dataloader = DataLoader(unlabeled_dataset, batch_size=batch_size_un, shuffle=True)
+        ###########
+
+
         for i,client in enumerate(clients):
             Xtrain, ytrain = dataset.getNextLocalBatch(i, args.train_batch_size)
-            if (t+1) % args.comm_period == 0 and yconsensus is not None:
-                Xtrain, ytrain = np.concatenate((Xtrain, dataset.Xunlabeled)), np.concatenate((ytrain, yconsensus))
-            if args.dataset=="IMDB":
+            if yconsensus is not None:
+            #if yconsensusQualified is not None:
+                # Sample one batch from the DataLoader
+                X_batch, y_batch = next(iter(unlabeled_dataloader))
+                #Turn it on if you need to use the full unlabaled dataset
+                #Xtrain, ytrain = np.concatenate((Xtrain.cpu(), dataset.Xunlabeled.cpu())), np.concatenate((ytrain, yconsensus))
+                Xtrain, ytrain = np.concatenate((Xtrain.cpu(), X_batch.cpu())), np.concatenate((ytrain, y_batch))
+                #####
+                # Turn on for a Qualified majority vote
+                #Xtrain, ytrain = np.concatenate((Xtrain, X_unlabeled_filtered)), np.concatenate((ytrain, yconss_filtered))
+                ######
+            if args.dataset=="IMDB" or args.dataset=="Twitter":
+                print("I am here training LLM")
+                print("Xtrain final , Ytrain final", Xtrain.shape,ytrain.shape)
                 client.train_llm(Xtrain, ytrain)
             else:
+                print("Xtrain final , Ytrain final", Xtrain.shape,ytrain.shape)
                 client.train(Xtrain, ytrain)
         if (t+1) % args.comm_period == 0:
             print("Comm-round ",(t+1))
+            predictions = []
             #params = []
+            # Assuming dataset.Xunlabeled is a numpy array
+            #Xunlabeled_tensor = torch.tensor(dataset.Xunlabeled)
+            # Create an instance of the UnlabeledDataset
+            #Xunlabeled_dataset = XUnlabeledDataset(Xunlabeled_tensor)
+            #Xunlabeled_dataloader = DataLoader(Xunlabeled_dataset, batch_size=64, shuffle=False)
+
             for client in clients:
-                if args.dataset=="IMDB":
+                if args.dataset=="IMDB" or args.dataset=="Twitter":
                     predictions.append(client.predict_llm(dataset.Xunlabeled))
+                #if args.dataset == "IMDB" or args.dataset == "Twitter":
+                    #client_predictions = []
+                    #for X_batch in Xunlabeled_dataloader:
+                        # Move batch to the appropriate device if necessary
+                        # X_batch = X_batch.to(device)
+                        #batch_predictions = client.predict_llm(X_batch)
+                        #client_predictions.extend(batch_predictions)
+                    #predictions.append(client_predictions)
                 else:
                     predictions.append(client.predict(dataset.Xunlabeled))              
-                #params.append(client.getParameters())
-            #agg_params = aggregate(params)
             predictions = np.array(predictions)
-            #comm_log[t] = {"params":params.copy(),"agg":agg_params,"clients":params}
-            comm_log[t] = {"predictions" : predictions.copy(), "consensus_labels" : getConsensusLabels(predictions, args.consensus)}
+            comm_log[t] = {"predictions" : predictions.copy(), "consensus_labels" : getConsensusLabels(predictions, args.consensus),"y_true_unlabled":dataset.yunlabeled}
+            ######
+            #yconsensusQualified = getConsensusLabelsQualified(predictions, args.consensus,agreement_threshold=0.9)
+            #yconsensusQualified = np.array(yconsensusQualified)
+            #valid_indices = np.where(yconsensusQualified != -1)[0]
+            #print("len valid_idices",len(valid_indices))
+            #yconss_filtered = [yconsensusQualified[i] for i in valid_indices]
+            #print("len yconss_filtered",len(yconss_filtered))
+            #X_unlabeled_filtered = dataset.Xunlabeled[valid_indices]
+            #y_unlabaled_true_filtered=dataset.yunlabeled[valid_indices]
+            #print("len X_unlabeled_filtered",len(X_unlabeled_filtered))
+            #comm_log[t] = {"predictions" : predictions.copy(), "yconss_filtered" : yconss_filtered,"y_unlabaled_true_filtered" : y_unlabaled_true_filtered,"len yconss_filtered":len(yconss_filtered)}
+            ######
+
         if args.evaluation_rounds == 1 or (t + 1) % args.evaluation_rounds == 0:
-            log_errors(clients, dataset, error_measure, error_log, t)
-            log_models(clients, t, exp_path)
+            #log_errors(clients, dataset, error_measure, error_log, t)
+            log_errors_batches(clients, dataset, error_measure, error_log, t, train_batch_size=32, test_batch_size=32)
+            #log_models(clients, t, exp_path)
 
 elif args.method == "FedCT-DP": #label sharing
     clients = []
