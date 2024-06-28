@@ -2,6 +2,8 @@ from parameters_pytorch import PyTorchNNParameters
 from collections import OrderedDict
 import numpy as np
 from clients import *
+import torch
+
 
 class PyTorchNN(Client):
     def __init__(self, device_type="cuda"):
@@ -41,6 +43,50 @@ class PyTorchNN(Client):
         else:
             self._schedule = None
 
+    def per_train(self, X1, y1,X2,y2,lmbda):
+        import torch
+        import torch.nn as nn
+        if self._core is None:
+            self.error("No core is set")
+            raise AttributeError("No core is set")
+        self.old_params = self.getParameters() #store previous parameters
+        self._updateRule.zero_grad()   # zero the gradient buffers
+        def prepare_tensors(X, y):
+            if isinstance(X, torch.Tensor):
+                X = X.cpu().numpy()
+            if isinstance(y, torch.Tensor):
+                y = y.cpu().numpy()
+            
+            if self._mode == 'gpu':
+                exampleTensor = torch.cuda.FloatTensor(X, device=self._device)
+                labelTensor = torch.tensor(y, device=self._device)      
+            else:
+                exampleTensor = torch.tensor(X)
+                if type(self._loss) is nn.MSELoss or type(self._loss) is nn.L1Loss:
+                    labelTensor = torch.tensor(y)
+                else:
+                    labelTensor = torch.LongTensor(y)
+            return exampleTensor, labelTensor
+        # Prepare tensors for X1, y1 and X2, y2
+        exampleTensor1, labelTensor1 = prepare_tensors(X1, y1)
+        exampleTensor2, labelTensor2 = prepare_tensors(X2, y2)
+        
+        # Forward pass
+        output1 = self._core(exampleTensor1)
+        output2 = self._core(exampleTensor2)
+        
+        # Calculate individual losses
+        loss1 = self._loss(output1, labelTensor1)
+        loss2 = self._loss(output2, labelTensor2)
+        # Combine the losses
+        loss= loss1 + lmbda * loss2
+
+        loss.backward()
+        self._updateRule.step()    
+        if self._schedule is not None:
+            self._schedule.step()
+        return [loss.data.cpu().numpy(),output1.data.cpu().numpy(), output2.data.cpu().numpy()]
+    
     def train(self, X, y):
         import torch
         import torch.nn as nn
@@ -56,7 +102,13 @@ class PyTorchNN(Client):
         if isinstance(y, torch.Tensor):
             y = y.cpu().numpy()      
         if self._mode == 'gpu':
-            exampleTensor = torch.cuda.FloatTensor(X, device=self._device)
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+            #exampleTensor = torch.cuda.FloatTensor(X, device=self._device)
+                X_tensor = torch.tensor(X, dtype=torch.float32, device=self._device)
+            exampleTensor = X_tensor.clone().detach().to(torch.float32).to(self._device)
+
             labelTensor = torch.tensor(y, device=self._device)      
         else:
             exampleTensor = torch.tensor(X)
@@ -75,7 +127,12 @@ class PyTorchNN(Client):
     def predict(self, X) -> np.ndarray:
         import torch
         if self._mode == 'gpu':
-            exampleTensor = torch.tensor(X, dtype=torch.float32, device=self._device)
+            import warnings
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                #exampleTensor = torch.tensor(X, dtype=torch.float32, device=self._device)
+                X_tensor = torch.tensor(X, dtype=torch.float32, device=self._device)
+            exampleTensor = X_tensor.clone().detach().to(torch.float32).to(self._device)
         else:
             exampleTensor = torch.FloatTensor(X)
         output = self._core(exampleTensor).data.cpu().numpy()
@@ -138,7 +195,7 @@ class PyTorchNN(Client):
         output = self._core(exampleTensor)
         output=output.logits.detach().cpu().numpy()
         return np.argmax(output, 1)
-        
+
     def setParameters(self, param : PyTorchNNParameters):
         import torch
         if not isinstance(param, PyTorchNNParameters):
@@ -175,17 +232,37 @@ class PyTorchNN(Client):
             flatParam += np.ravel(v).tolist()
         return np.asarray(flatParam)
 
+
+@is_client        
+class Resnet18DomainNet(PyTorchNN):  
+    def __init__(self, device_type="cuda"):
+        from papernet import DomainNetResNet18
+        super(Resnet18DomainNet, self).__init__()
+        self.name = "Resnet18Cifar10"
+        device = torch.device(device_type)
+        optimizer = 'Adam' #should be given via kwargs, or by passing args from experiment
+        lr = 0.1
+        lr_schedule_ep = None
+        lr_change_rate = 0.5
+        lossFunction = "CrossEntropyLoss"
+        torchnetwork = DomainNetResNet18(345) #Cifar10ResNet50()
+        torchnetwork = torchnetwork.cuda(device)
+        self.setCore(torchnetwork)
+        self.setLoss(lossFunction)
+        self.setUpdateRule(optimizer, lr, lr_schedule_ep, lr_change_rate)
+
 @is_client        
 class Resnet18Cifar10(PyTorchNN):  
     def __init__(self, device_type="cuda"):
-        from resnet import Cifar10ResNet18
+        #from resnet import Cifar10ResNet18
+        from clients.resnet import Cifar10ResNet18
         super(Resnet18Cifar10, self).__init__()
         self.name = "Resnet18Cifar10"
         device = torch.device(device_type)
-        optimizer = 'SGD' #should be given via kwargs, or by passing args from experiment
+        optimizer = 'Adam' #should be given via kwargs, or by passing args from experiment
         lr = 0.01
         lr_schedule_ep = None
-        lr_change_rate = 0.5
+        lr_change_rate = 0.05
         lossFunction = "CrossEntropyLoss"
         torchnetwork = Cifar10ResNet18() #Cifar10ResNet50()
         torchnetwork = torchnetwork.cuda(device)
@@ -202,11 +279,31 @@ class PaperPytorchCIFARNet(PyTorchNN):
         self.name = "PaperPytorchCIFARNet"
         device = torch.device(device_type)
         optimizer = 'Adam' #should be given via kwargs, or by passing args from experiment
-        lr = 0.01
+        lr = 0.1
         lr_schedule_ep = None
-        lr_change_rate = 0.05
+        lr_change_rate = 0.5
         lossFunction = "CrossEntropyLoss"
         torchnetwork = Cifar10paperNetPytorch() #Cifar10ResNet50()
+        torchnetwork = torchnetwork.cuda(device)
+        self.setCore(torchnetwork)
+        self.setLoss(lossFunction)
+        self.setUpdateRule(optimizer, lr, lr_schedule_ep, lr_change_rate)
+
+@is_client        
+class PaperPytorchCIFAR100Net(PyTorchNN):  
+    def __init__(self, device_type="cuda"):
+        from papernet import SimpleCifar100NetPytorch
+        #import resnet 
+        import torch
+        super(PaperPytorchCIFAR100Net, self).__init__()
+        self.name = "PaperPytorchCIFAR100Net"
+        device = torch.device(device_type)
+        optimizer = 'Adam' #should be given via kwargs, or by passing args from experiment
+        lr = 0.1
+        lr_schedule_ep = None
+        lr_change_rate = 0.5
+        lossFunction = "CrossEntropyLoss"
+        torchnetwork = SimpleCifar100NetPytorch()
         torchnetwork = torchnetwork.cuda(device)
         self.setCore(torchnetwork)
         self.setLoss(lossFunction)
@@ -262,10 +359,10 @@ class PaperPytorchFashionMNIST(PyTorchNN):
         super(PaperPytorchFashionMNIST, self).__init__()
         self.name = "PaperPytorchFashionMNIST"
         device = torch.device(device_type)
-        optimizer = 'Adam' #should be given via kwargs, or by passing args from experiment
-        lr = 0.00001
+        optimizer = 'SGD' #should be given via kwargs, or by passing args from experiment
+        lr = 0.001
         lr_schedule_ep = None
-        lr_change_rate = 0.00005
+        lr_change_rate = 0.005
         lossFunction = "CrossEntropyLoss"
         torchnetwork = FashionMNISTnet()
         pytorch_total_params = sum(p.numel() for p in torchnetwork.parameters())
@@ -285,11 +382,31 @@ class PaperPytorchSVHN(PyTorchNN):
         self.name = "PaperPytorchSVHN"
         device = torch.device(device_type)
         optimizer = 'Adam' #should be given via kwargs, or by passing args from experiment
-        lr = 1e-3
+        lr = 0.01
         lr_schedule_ep = None
-        lr_change_rate = 0.0005
+        lr_change_rate = 0.05
         lossFunction = "CrossEntropyLoss"
         torchnetwork = SVHNnet()
+        torchnetwork = torchnetwork.cuda(device)
+        self.setCore(torchnetwork)
+        self.setLoss(lossFunction)
+        self.setUpdateRule(optimizer, lr, lr_schedule_ep, lr_change_rate)
+
+@is_client
+class PaperPytorchbreastcancer(PyTorchNN):  
+    def __init__(self, device_type="cuda"):
+        from papernet import breastcancerNetwork
+        import torch
+        import torch.nn as nn
+        super(PaperPytorchbreastcancer, self).__init__()
+        self.name = "PaperPytorchbreast_cancer"
+        device = torch.device(device_type)
+        optimizer = 'Adam' #should be given via kwargs, or by passing args from experiment
+        lr = 0.001
+        lr_schedule_ep = None
+        lr_change_rate = 0.005
+        lossFunction = "CrossEntropyLoss"
+        torchnetwork = breastcancerNetwork()
         torchnetwork = torchnetwork.cuda(device)
         self.setCore(torchnetwork)
         self.setLoss(lossFunction)
@@ -299,7 +416,11 @@ class PaperPytorchSVHN(PyTorchNN):
 class PaperPytorchIMDB(PyTorchNN):  
     def __init__(self, device_type="cuda"):
         from transformers import GPT2ForSequenceClassification
-        
+        #from transformers import LlamaForSequenceClassification , AutoTokenizer
+        #from transformers import AutoModelForSequenceClassification
+        #model_name = "llama"
+        #num_labels = 2
+
         super(PaperPytorchIMDB, self).__init__()
         self.name = "PaperPytorchIMDB"
         device = torch.device(device_type)
@@ -309,6 +430,44 @@ class PaperPytorchIMDB(PyTorchNN):
         lr_change_rate = 0.0005
         #lossFunction = "CrossEntropyLoss"
         torchnetwork = GPT2ForSequenceClassification.from_pretrained("gpt2", num_labels=2)
+        #torchnetwork = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels)
+        #tokenizer = AutoTokenizer.from_pretrained(model_name)
+        #tokenizer.pad_token = tokenizer.eos_token
+        #torchnetwork.config.pad_token_id=tokenizer.pad_token_id
+        torchnetwork.config.pad_token_id=50256
+        torchnetwork = torchnetwork.cuda(device)
+        num_params = sum(p.numel() for p in torchnetwork.parameters())
+        print(f"Number of parameters: {num_params}")
+        self.setCore(torchnetwork)
+        #self.setLoss(lossFunction)
+        self.setUpdateRule(optimizer, lr, lr_schedule_ep, lr_change_rate)
+
+@is_client
+class PaperPytorchTwitter(PyTorchNN):  
+    def __init__(self, device_type="cuda"):
+        from transformers import GPT2ForSequenceClassification
+        from transformers import GPT2Tokenizer
+        #from transformers import LlamaForSequenceClassification , AutoTokenizer
+        #from transformers import AutoModelForSequenceClassification
+        #model_name = "llama"
+        #num_labels = 2
+
+        super(PaperPytorchTwitter, self).__init__()
+        self.name = "PaperPytorchTwitter"
+        device = torch.device(device_type)
+        optimizer = 'AdamW' #should be given via kwargs, or by passing args from experiment
+        lr = 0.0001
+        lr_schedule_ep = None
+        lr_change_rate = 0.0005
+        #lossFunction = "CrossEntropyLoss"
+        torchnetwork = GPT2ForSequenceClassification.from_pretrained("gpt2", num_labels=4)
+        #torchnetwork = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels)
+        #tokenizer = AutoTokenizer.from_pretrained(model_name)
+        #tokenizer.pad_token = tokenizer.eos_token
+        #torchnetwork.config.pad_token_id=tokenizer.pad_token_id
+        tokenizer = GPT2Tokenizer.from_pretrained("gpt2", bos_token='<|startoftext|>',eos_token='<|endoftext|>', pad_token='<|pad|>')
+        torchnetwork.resize_token_embeddings(len(tokenizer))
+
         torchnetwork.config.pad_token_id=50256
         torchnetwork = torchnetwork.cuda(device)
         num_params = sum(p.numel() for p in torchnetwork.parameters())
