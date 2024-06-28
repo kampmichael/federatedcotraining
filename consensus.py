@@ -28,6 +28,38 @@ def getConsensusLabels(predictions, consensus_method):
     print("ERROR: consensus method ",consensus_method," unknown.")
     return None
 
+    
+def getConsensusLabelsQualified(predictions, consensus_method, agreement_threshold=0.8):
+    if predictions is None:
+        return None
+    if isinstance(predictions, list) and len(predictions) == 0:
+        return None
+    if predictions.size == 0:
+        return None
+    
+    if consensus_method == 'majority':
+        num_clients, num_samples = len(predictions), len(predictions[0])
+        num_classes = np.max([np.max(client_pred) for client_pred in predictions]) + 1
+
+        final_predictions = []
+
+        for sample_idx in range(num_samples):
+            class_votes = np.zeros(num_classes)
+            for client_pred in predictions:
+                class_votes[client_pred[sample_idx]] += 1
+
+            class_votes_percentage = class_votes / num_clients
+            majority_label = np.argmax(class_votes_percentage)
+
+            if class_votes_percentage[majority_label] >= agreement_threshold:
+                final_predictions.append(majority_label)
+            else:
+                final_predictions.append(-1)  # Flag for disagreement
+
+        return final_predictions
+
+    print("ERROR: consensus method", consensus_method, "unknown.")
+    return None
 
 def getConsensusSoftDecisions(soft_decisions, consensus):
     if consensus == "average":
