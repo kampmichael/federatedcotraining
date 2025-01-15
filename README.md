@@ -1,4 +1,4 @@
-# Little is Enough: Improving Privacy by Sharing Labels in Federated Semi-Supervised Learning
+# Little is Enough: Boosting Privacy by Sharing Only Hard Labels in Federated Semi-Supervised Learning
 
 ## [FedCT](#FedCT)
 This repository includes the implementation of [Federated Co-Training Approach FedCT.](https://arxiv.org/pdf/2310.05696.pdf) In this paper, we propose to use federated co-training by having clients share predictions on an unlabeled public dataset iteratively. The server then creates a consensus based on these predictions, which clients utilize as pseudo-labels. In summary, our contributions are:
